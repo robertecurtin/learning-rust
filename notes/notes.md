@@ -225,3 +225,14 @@ _Slices_ allow you to reference a contiguous sequence of elements within a colle
 Slices tie indices to the collection they are connected to
 
 String literals *are* string slices `&str`
+
+#### Chapter 5
+
+Structs are structs
+
+Tuple structs are basically tuples that are defined as types so they can be considered when the compiler validates types
+
+You can define structs without fields, called unit-like structs, can be useful when you have types with traits but no data stored
+
+Rust doesn't have the `->` operator, it automatically references / dereferences because it knows the expected type
+
