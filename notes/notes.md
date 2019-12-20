@@ -226,7 +226,7 @@ Slices tie indices to the collection they are connected to
 
 String literals *are* string slices `&str`
 
-#### Chapter 5
+### Chapter 5
 
 Structs are structs
 
@@ -235,4 +235,49 @@ Tuple structs are basically tuples that are defined as types so they can be cons
 You can define structs without fields, called unit-like structs, can be useful when you have types with traits but no data stored
 
 Rust doesn't have the `->` operator, it automatically references / dereferences because it knows the expected type
+
+
+### Chapter 6
+
+You can store data with different enumerated values
+
+```rust
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+}
+```
+
+`Option` is used when a value could be something or nothing. Rust doesn't have `null`. You have to convert an `Option<T>` to `T` before you can perform `T` operations. This protects you from unsafe assumptions.
+
+```rust
+enum Option<T> {
+    Some(T),
+    None,
+}
+```
+
+`match` lets you compare a value against patterns, checking the top pattern first and then each subsequent one. You will frequently omit {} on the right hand side, since a value is an expression
+
+`_` is the default pattern
+
+```rust
+match value {
+  Value::A => {
+    1
+  },
+  Value::B => 2,
+  _ => 0 // default
+}
+```
+
+`if let` is syntatic sugar for a match that takes one case and ignores defaults
+
+```rust
+if let Some(3) = some_value {
+  do_a_thing();
+}
+```
 
