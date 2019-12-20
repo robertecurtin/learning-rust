@@ -54,7 +54,7 @@ Rust has a strong, static type system and also type inference
 
 When converting between types, you can shadow previous values:
 
-```
+```rust
 let mut guess = String::new();
 ... // read input into guess
 let guess: u32 = guess.trim().parse().expect("Numerical input expected");
@@ -65,3 +65,61 @@ let guess: u32 = guess.trim().parse().expect("Numerical input expected");
 `loop { ... }` creates an infinite loop that can be exited with `break`, `continue` skips to the next iteration of the loop
 
 ### Chapter 3
+
+Using `const` instead of `let` declares a constant, and requires that you define the type:
+
+```rust
+const SOME_VALUE: u32 = 100;
+```
+
+Constants can be declared in the global scope
+
+You only need to declare a type when it can't be inferred. Rust's nifty compiler errors will help you here.
+
+#### Types
+Integer: `i/u` `8/16/32/64/128/size`
+
+Float: `f32` / `f64`
+
+Character: `char`, written as `'z'`
+
+Tuple: `tup`, written as `(i8, char, f32)`
+```rust
+let tup = (1, 1.8, 'z')
+let (a, b, c) = tup
+or
+let tup: (i32, f32, char) = (1, 1.8, 'z')
+let a = tup.0
+let b = tup.1
+```
+
+Array: `[type; length]` `[i8; 3] = [1, 2, 3]`
+
+Can use `_` as a visual separator: `12_345` == `12345`
+
+Name|Example
+---|---
+Hex | 0xFF
+Octal | 0o77
+Binary | 0b0101_0110
+Byte | b'A'
+
+Rust will throw runtime errors if you index an array out of bounds
+
+Rust uses snake_case for function and variable names
+
+Rust requires type declarations for function definitions, which means they can be inferred elsewhere
+
+Functions contain statements and expressions. Statements do not return a value, expressions evaluate to a value
+
+```rust
+// This is valid:
+let x = 5;
+let y = {
+  let x = 3;
+  x + 1
+}; // y == 4
+```
+
+Expressions terminated with a semicolon become a statement
+
