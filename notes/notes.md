@@ -123,3 +123,105 @@ let y = {
 
 Expressions terminated with a semicolon become a statement
 
+### Chapter 4
+
+`let s == "hello";` `s` is a string literal, has a known length, and is allocated on the stack
+
+`let s = String::from("ss");` `s` is of type `String`, is allocated on the heap, and is thus dynamic
+
+Memory is returned when the variable *owning* it goes out of scope
+
+Rust calls `drop` automatically, which returns memory
+
+Simple data types with fixed size can be copied:
+```rust
+let x = 5;
+let y = x;
+let z = x; // this is fine
+```
+
+References are moved rather than copied, and can't be referenced after that point:
+```rust
+  let x = String::from("hi");
+  let y = x;
+  let z = x; // compilation error!
+```
+
+Objects consist of a pointer, data length (current length), and capacity (total memory allocated)
+
+You can deep copy with `clone`:
+```rust
+  let x = String::from("hi");
+  let y = x.clone();
+  let z = x; // this is fine
+```
+
+Types with the `Copy` trait don't need to be cloned. These include:
+- Integer types
+- bool
+- Floating point types
+- char
+- Tuples and arrays that contain types with the `Copy` trait
+
+Passing a value to a function also passes ownership of the variable, and will move / copy accordingly
+```rust
+  let x = String::from("hi");
+  some_function(x);
+  let y = x; // compilation error!
+```
+
+Returning values also transfers ownership
+```rust
+fn return_something() -> String {
+  let x = String::from("hi");
+  x // returned, but memory not freed, how tidy
+}
+```
+
+You can also use references when calling functions, dereference is & and reference is *, like in c
+
+Rust calls using references "borrowing"
+
+You can't modify something you've borrowed:
+
+```rust
+  fn length(s: &String) -> usize {
+    s.push_str("oh no"); // compilation error!
+  }
+  let x = String::from("foo");
+  println!("{}", length(&x));
+```
+
+You can fix the above code using `mut`, but you can only have one mutable reference in a given scope (only one person can borrow it at once). This prevents data races.
+
+```rust
+  let x = String::from("foo");
+  let r1 = &mut x;
+  let r2 = &mut x; // compilation error!
+```
+
+This is fine, though, because the brackets ensure we won't have _simultaneous_ references
+
+```rust
+  let x = String::from("foo");
+  {
+    let r1 = &mut x;
+  }
+  let r2 = &mut x; // this is fine
+```
+
+Likewise:
+```rust
+  let x = String::from("foo");
+  let r1 = &x; // this is fine
+  let r2 = &x; // everything is fine
+  let r3 = &mut x; // compilation error!
+```
+
+Rust prevents you from having a _dangling pointer_ (pointer referencing memory that has been freed) because of these rules somehow, I haven't bothered to think through how yet
+
+_Slices_ allow you to reference a contiguous sequence of elements within a collection. String slices are `&str`, array slices are &[i32]
+
+Slices tie indices to the collection they are connected to
+
+String literals *are* string slices `&str`
