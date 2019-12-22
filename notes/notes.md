@@ -281,3 +281,140 @@ if let Some(3) = some_value {
 }
 ```
 
+### Chapter 7
+
+"
+    Packages: A Cargo feature that lets you build, test, and share crates
+    Crates: A tree of modules that produces a library or executable
+    Modules and use: Let you control the organization, scope, and privacy of paths
+    Paths: A way of naming an item, such as a struct, function, or module
+"
+
+Rust uses Packages, Crates, Modules, and Paths
+
+#### Package
+Defined in `Cargo.toml`
+
+Allows you to build / test / share a crate or crates that provide a set of functionality.
+
+I imagine there is usually one per git repo.
+
+Can contain zero or one library crates and/or any number of binary crates.
+
+#### Crate
+A binary or library.
+
+`src/main.rs` is the crate root of a binary crate.
+
+`src/lib.rs` is the crate root of a library crate.
+
+If you want multiple binary crates, place files in `src/bin`.
+
+You can combine binary and library crates in the same package.
+
+Crates are namespaced, so including `rand` as a dependency means you can access its `Rng` trait using `rand::Rng`
+
+Library crates that expose a function as part of their public API must use the `pub` keyword
+
+#### Module
+Define a module with `mod name_of_mod {...}`
+
+Load a module from a file of the same name using `mod name_of_mod;` (note the `;`)
+
+Modules can hold definitions of items like structs / enums / traits / functions, and can contain other modules
+
+Modules form a module tree, with the crate root (`main.rs`/`lib.rs`) as the root
+
+Module tree structure is analogous to a file system
+
+#### Path
+Your path is how you navigate the module tree, similar to an os path. The book suggests using absolute paths. "The decision should depend on whether you’re more likely to move item definition code separately from or together with the code that uses the item."
+
+Absolute paths start at crate:
+
+`crate::front_of_house::hosting::add_to_waitlist();`
+
+Relative paths start at the current path:
+
+`(from front_of_house) hosting::add_to_waitlist();`
+
+You can use `super` to go up a level in the path, like `..`:
+
+`(from crate::other_module) super::hosting::add_to_waitlist();
+
+Everything is private by default in Rust :party:, `pub` keyword makes it public. This includes modules within modules.
+
+Structs can be made public with `pub`, but you still need to make their fields public:
+```rust
+pub struct AStruct {
+  pub a_field: String,  // I'm available!
+  another_field: String // I'm seeeecret
+}
+```
+
+Making an enum public, however, makes all of its variants public:
+```rust
+pub enum AnEnum {
+  A, // I'm available!
+  B, // I'm available!
+}
+```
+
+`use` allows you to bring a path into the local scope, and is analogous to a symbolic link.
+
+By convention, this is handled differently for functions and items. There's no strong reason for this.
+
+For functions, it's idiomatic to bring the parent module into scope with `use`:
+
+```rust
+use crate::some_module::some_function // ugh
+
+pub fn do_a_thing() {
+  some_function(); // this works, but don't do it
+}
+```
+vs
+```rust
+use crate::some_module // yay
+
+pub fn do_a_thing() {
+  some_module::some_function(); // oh, that's where that function came from
+}
+```
+
+Whereas for structs, enums, and other items, it's idiomatic to bring them into scope by `use`-ing the full path
+```rust
+use std::collections::HashMap;
+
+pub fn do_a_thing() {
+  let mut map = HashMap::new();
+}
+```
+
+Obviously, if you are using two items with the same name, you need to namespace them or use `as`.
+
+```rust
+use std::fmt::Result as FmtResult; // their example had this as "Result" instead of having paired names :|
+use std::io::Result as IoResult;
+```
+
+You can expose private included items using `pub use`.
+
+Adding a dependency to `Cargo.toml` tells it to go to `crates.io` and get that crate to include in the project
+
+You can use nested paths to bring multiple things into scope:
+```rust
+use std::io;
+use std::io::Read;
+use std::io::Write;
+```
+vs
+```rust
+use std::io::{self, Read, Write};
+```
+
+You can also glob, in case you want to obfuscate your dependencies:
+```rust
+use std::collections::*;
+```
+
