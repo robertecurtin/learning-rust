@@ -418,3 +418,36 @@ You can also glob, in case you want to obfuscate your dependencies:
 use std::collections::*;
 ```
 
+
+### Chapter 8
+
+Here are all the collections provided by the standard library: https://doc.rust-lang.org/std/collections/index.html
+
+They recommend you pretty much always use `Vec` or `HashMap` unless you _really_ need another data structure
+
+A vector allows you to store a variable number of values of one type (i.e. an expandable array)
+
+A string is a collection of characters
+
+A hash map associates keys with values (i.e. a dictionary)
+
+You can use `&v[i]` or `v.get(i)` to index a vector. `v.get(i)` returns `Some(&element)`, so use it when you want to handle indexing errors instead of crashing.
+
+You can init a vector with `vec![1, 2, 3]`
+
+`for i in &v {...}`
+
+If you want to store multiple types in a vector, abuse the fact that an Enum is a type, and can hold different types
+
+`str` (string slice) is the only string type, although we usually use `String`, which is a growable string (like a vector)
+
+Strings are UTF-8 encoded, so they support different languages
+
+`s.len()` gives byte length, not string length, be careful when working with extended characters
+
+You can't index into strings because UTF-8, instead, you slice them
+
+Hashmaps copy any values placed into them with the Copy, and therefore take ownership
+
+`for` loops over a hash map have no particular order
+

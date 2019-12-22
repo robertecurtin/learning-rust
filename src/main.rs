@@ -2,6 +2,7 @@ mod chapter3;
 mod chapter4;
 mod chapter5;
 mod chapter6;
+mod chapter8;
 
 fn main() {
   println!("-- Chapter 3 --");
@@ -15,4 +16,7 @@ fn main() {
 
   println!("-- Chapter 6 --");
   chapter6::chapter6();
+
+  println!("-- Chapter 8 --");
+  chapter8::chapter8();
 }
