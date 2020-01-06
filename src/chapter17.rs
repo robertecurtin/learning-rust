@@ -9,6 +9,12 @@ impl Foo {
   }
 }
 
+fn foo_init() -> Foo {
+  Foo {
+    a: 1
+  }
+}
+
 struct Bar {
   foo: Foo
 }
@@ -19,11 +25,21 @@ impl Bar {
   }
 }
 
+fn bar_init() -> Bar {
+  Bar {
+    foo: foo_init()
+  }
+}
+
 pub fn chapter17() {
   let bar = Bar {
     foo: Foo {
-      a: 1
+      a: 10
     }
   };
-  println!("foo says: {}", bar.foo().a()) // 1
+  println!("foo says: {}", bar.foo().a()); // 10
+
+
+  let bar = bar_init();
+  println!("foo says: {}", bar.foo().a()); // 1
 }
