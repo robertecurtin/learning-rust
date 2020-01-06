@@ -451,3 +451,294 @@ Hashmaps copy any values placed into them with the Copy, and therefore take owne
 
 `for` loops over a hash map have no particular order
 
+
+### Chapter 9
+Unrecoverable errors are bugs, like accessing an array out-of-bounds. `panic!` is used for these.
+
+Recoverable errors are expected possible problems, such as file not found errors. The `Result<T, E>` type is used for these.
+
+`panic!` prints a failure message, unwinds and cleans up the stack, then quits. You can switch this behavior to ending the program without cleaning up by adding `panic = 'abort'` to the relevant `[profile]` sections of `Cargo.toml`. This reduces binary size.
+
+You can set `RUST_BACKTRACE` to `1` to get a backtrace (`RUST_BACKTRACE = 1 cargo run`), as long as you have debug symbols enabled (which they are for `cargo build/run` without `--release`)
+
+Result is defined as
+```rust
+
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+You can use `match` to handle `Result`s:
+```rust
+let f = File::open("foo.txt");
+let f = match f {
+  Ok(file) => file,
+  Err(error) => {
+    panic!("Error opening: {:?})", error)
+  };
+}
+```
+
+You can also match on different error types:
+```rust
+let f = match f {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create("foo.txt") {
+                Ok(fc) => fc,
+                Err(e) => panic!("Problem creating the file: {:?}", e),
+            },
+            other_error => panic!("Problem opening the file: {:?}", other_error),
+        },
+    };
+```
+
+In practice, you'll probably use closures (which are in chapter 13), which will look like this:
+```rust
+let f = File::open("foo.txt").unwrap_or_else(|error| {
+        if error.kind() == ErrorKind::NotFound {
+            File::create("foo.txt").unwrap_or_else(|error| {
+                panic!("Problem creating the file: {:?}", error);
+            })
+        } else {
+            panic!("Problem opening the file: {:?}", error);
+        }
+    });
+```
+
+`unwrap()` will take a `Result` and either return the value in `Ok` or call `panic!` with the error message
+
+`expect("...")` does the same as `unwrap`, but allows you to provide your own error message
+
+You can use the `?` operator to propagate errors when your function returns a `Result`
+
+```rust
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut f = File::open("foo.txt")?;
+    let mut s = String::new();
+    f.read_to_string(&mut s)?;
+    Ok(s)
+}
+```
+You can even chain `?`s
+```rust
+    File::open("foo.txt")?.read_to_string(&mut s)?;
+```
+Of course, when you actually read from files, you'll do this:
+```rust
+fs::read_to_string("foo.txt")
+```
+
+Here's a trick specific to using `?` in `main`:
+```rust
+fn main() -> Result<(), Box<dyn Error>> {
+    let f = File::open("hello.txt")?;
+
+    Ok(())
+}
+```
+
+Returning `Result` should be the default case for a function that might fail
+
+Calls to `unwrap` in examples or in prototype code can indicate where actual error handling would be
+
+In tests, you want to use `unwrap` / `expect` so that it fails loud and clear
+
+If you know that your code will never fail, it makes sense to call `unwrap`
+
+You should `panic` whenever your code ends up in a bad state, meaning when invalid value, contradictory values, or missing values are passed, plus one or more of these:
+- The state isn't one that's expected to happen occasionally
+- Your code relies on not being in the bad state
+- There's not a good way to encode this info in the type
+
+When failure is expected, return a `Result`. When it isn't, then `panic`
+
+You can also use a custom type to ensure that you can't ever recieve a non-valid value, and put validations in the type itself:
+
+```rust
+pub struct Guess {
+    value: i32,
+}
+
+impl Guess {
+    pub fn new(value: i32) -> Guess {
+        if value < 1 || value > 100 {
+            panic!("Guess value must be between 1 and 100, got {}.", value);
+        }
+
+        Guess {
+            value
+        }
+    }
+
+    pub fn value(&self) -> i32 {
+        self.value
+    }
+}
+```
+
+### Chapter 10
+Generics allow you to take in parameters of some generic type
+
+Traits allow you to define behavior in a generic way, which you can then combine with generic types to only allow a class of types that have a particular trait
+
+Lifetimes are generics that give the compiler information about how references relate to each other, and allow us to borrow values and tell the compiler how to check that they are valid
+
+Function with a generic data type:
+```rust
+fn largest<T>(list: &[T]) -> T { ... }
+```
+Struct with a generic data type:
+```rust
+struct Foo<T, U> { a: T, b: U }
+```
+Enum with a generic data type:
+```rust
+enum Option<T> { Some(T), None }
+```
+
+You can also have `impl` that work on specific types, but not others
+
+Rust's implementation of generics uses "monomorphization" to make sure code doesn't run slow when using generics
+
+It complies separate versions  of the generic code for each type that you actually use, like you'd expect. This will impact code size
+
+Traits are similar to interfaces in other languages, they define shared behavior between types
+
+Each type implementing a trait must provide its own custom behavior for the trait
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+```
+Then when you implement it:
+```rust
+impl Summary for SomeStruct {
+  fn summarize(&self) -> String { ... }
+}
+```
+
+You can also add default implementations. Note that default implementations can refer to other methods of the trait that may not have default implementations
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String {
+        String::from("(Read more...)")
+    }
+}
+...
+impl Summary for SomeStruct {}
+```
+
+You can't implement external traits on external types, in order to ensure that you can't have conflicting implementations for the same trait and type
+
+You can also request that a trait be available for your function (or state that the value you return implements a trait):
+```rust
+pub fn notify(item: impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+which is syntactic sugar for a longer form called a _trait bound_:
+```rust
+pub fn notify<T: Summary >(item: T) { ... }
+```
+
+If you want to ensure that multiple parameters have the exact same type, you have to use a trait bound. Using `impl Trait` would allow multiple parameters to have different types that all implement that trait
+
+Use `<T: Trait1 + Trait2>` or `impl Trait1 + Trait1` to require multiple traits
+
+You can use a `where` clause when things get crazy:
+```rust
+fn some_function<T, U>(t: T, u: U) -> i32
+    where T: Display + Clone,
+          U: Clone + Debug
+{
+```
+
+Note that you can only use `impl Trait` if you're returning a single type across all your condition's branches
+
+_Blanket implementations_ allow you to implement a trait on any type that satisfies its trait bounds, which is how anything that implements the `Display` trait gets access to `to_string` from the `ToString` trait:
+```rust
+impl<T: Display> ToString for T { ... }
+```
+
+Every reference has a _lifetime_, the scope for which it is valid. Like types, they're typically inferred. However, it may not be clear which variable's lifetime the reference should come from.
+
+```rust
+&i32        // a reference
+&'a i32     // a reference with an explicit lifetime
+&'a mut i32 // a mutable reference with an explicit lifetime
+
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x // is the output lifetime from here?
+    } else {
+        y // or from here?
+    }
+}
+```
+In the code above, the output reference's lifetime will last as long as the shorter of the two inputs
+
+In some special cases (called _lifetime elision rules_), you don't need to specify lifetime, because the complier can determine it
+
+Here are the three current rules, more may come later:
+The first rule is that each parameter that is a reference gets its own lifetime parameter. In other words, a function with one parameter gets one lifetime parameter: `fn foo<'a>(x: &'a i32)`; a function with two parameters gets two separate lifetime parameters: `fn foo<'a, 'b>(x: &'a i32, y: &'b i32)`; and so on.
+
+The second rule is if there is exactly one input lifetime parameter, that lifetime is assigned to all output lifetime parameters: `fn foo<'a>(x: &'a i32) -> &'a i32`.
+
+The third rule is if there are multiple input lifetime parameters, but one of them is `&self` or `&mut` self because this is a method, the lifetime of `self` is assigned to all output lifetime parameters. This third rule makes methods much nicer to read and write because fewer symbols are necessary.
+
+`'static` is a special lifetime that lives for the duration of the program. All string literals have the `'static` lifetime
+
+
+### Chapter 17
+`pub` keyword allows us to make modules / types / functions / methods public
+
+
+
+### Chapter 19
+You can create type synonyms if you want them to be interchangable, but this removes type validation:
+```rust
+type Kilometers = i32;
+```
+
+The "never type" `!` can be used for functions that never return, like main.
+
+You can use a trait object to return a closure:
+```rust
+fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
+    Box::new(|x| x + 1)
+}
+```
+
+#### Function pointers
+Functions coerce to the `fn` type, which is the function pointer type
+```rust
+fn add_one(x: i32) -> i32 {
+    x + 1
+}
+
+fn do_twice(f: fn(i32) -> i32, arg: i32) -> i32 {
+    f(arg) + f(arg)
+}
+
+fn main() {
+    let answer = do_twice(add_one, 5);
+    println!("The answer is: {}", answer);
+}
+```
+
+#### Macros
+There are four types of macros, one that is declarative (`macro_rules!`) and three that are procedural
+
+`macro_rules!` is the main form of macros, and allow you to make something similar to a match expression. They can also iterate over provided arguments
+
+Here are some fun examples: https://doc.rust-lang.org/reference/macros.html
+
+Procedural macros act like functions, taking code as an input and producing code as an output
+
+Currently, procedural macro definitions must reside in their own crate with a special crate type
+
+These probably let us do nifty stuff, but I don't need to know it yet
+
